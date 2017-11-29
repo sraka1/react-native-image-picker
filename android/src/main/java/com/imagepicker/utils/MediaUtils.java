@@ -41,9 +41,11 @@ public class MediaUtils
                                                @NonNull final ReadableMap options,
                                                @NonNull final boolean forceLocal)
     {
+        final String extension = (options.hasKey("imageFileType") && options.getString("imageFileType").toLowerCase().equals("png")) ? ".png" : ".jpg";
+
         final String filename = new StringBuilder("image-")
                 .append(UUID.randomUUID().toString())
-                .append(".jpg")
+                .append(extension)
                 .toString();
 
         final File path = ReadableMapUtils.hasAndNotNullReadableMap(options, "storageOptions") && !forceLocal
@@ -153,7 +155,9 @@ public class MediaUtils
 
         scaledPhoto = Bitmap.createBitmap(photo, 0, 0, photo.getWidth(), photo.getHeight(), matrix, true);
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-        scaledPhoto.compress(Bitmap.CompressFormat.JPEG, result.quality, bytes);
+
+        Bitmap.CompressFormat outputFormat = (options.hasKey("imageFileType") && options.getString("imageFileType").toLowerCase().equals("png")) ? Bitmap.CompressFormat.PNG : Bitmap.CompressFormat.JPEG;
+        scaledPhoto.compress(outputFormat, result.quality, bytes);
 
         final boolean forceLocal = requestCode == REQUEST_LAUNCH_IMAGE_CAPTURE;
         final File resized = createNewFile(context, options, !forceLocal);
