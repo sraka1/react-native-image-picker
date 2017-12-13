@@ -73,7 +73,7 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
   protected Uri cameraCaptureURI;
   private Boolean noData = false;
   private Boolean pickVideo = false;
-  private ImageConfig imageConfig = new ImageConfig(null, null, 0, 0, 100, 0, false);
+  private ImageConfig imageConfig = new ImageConfig(null, null, 0, 0, 0, 0, 100, 0, false);
 
   @Deprecated
   private int videoQuality = 1;
@@ -148,7 +148,7 @@ public class ImagePickerModule extends ReactContextBaseJavaModule
 
     this.callback = callback;
     this.options = options;
-    imageConfig = new ImageConfig(null, null, 0, 0, 100, 0, false);
+    imageConfig = new ImageConfig(null, null, 0, 0, 0, 0, 100, 0, false);
 
     final AlertDialog dialog = UI.chooseDialog(this, options, new UI.OnAction()
     {

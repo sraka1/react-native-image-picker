@@ -197,7 +197,7 @@ public class MediaUtils
         scaledPhoto = Bitmap.createBitmap(photo, 0, 0, photo.getWidth(), photo.getHeight(), matrix, true);
 
         if (imageConfig.width != 0 && imageConfig.height != 0) {
-            scaledPhoto = cropImage(scaledPhoto, imageConfig.width)
+            scaledPhoto = cropImage(scaledPhoto, imageConfig.width);
         }
 
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();

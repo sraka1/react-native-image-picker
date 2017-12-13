@@ -149,7 +149,7 @@ public class ImageConfig
                 saveToCameraRoll = storageOptions.getBoolean("cameraRoll");
             }
         }
-        return new ImageConfig(this.original, this.resized, maxWidth, maxHeight, quality, rotation, saveToCameraRoll);
+        return new ImageConfig(this.original, this.resized, maxWidth, maxHeight, width, height, quality, rotation, saveToCameraRoll);
     }
 
     public boolean useOriginal(int initialWidth,
