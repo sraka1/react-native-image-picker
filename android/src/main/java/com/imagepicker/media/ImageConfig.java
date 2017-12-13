@@ -17,6 +17,8 @@ public class ImageConfig
     public @Nullable final File resized;
     public final int maxWidth;
     public final int maxHeight;
+    public final int width;
+    public final int height;
     public final int quality;
     public final int rotation;
     public final boolean saveToCameraRoll;
@@ -25,6 +27,8 @@ public class ImageConfig
                        @Nullable final File resized,
                        final int maxWidth,
                        final int maxHeight,
+                       final int width,
+                       final int height,
                        final int quality,
                        final int rotation,
                        final boolean saveToCameraRoll)
@@ -33,6 +37,8 @@ public class ImageConfig
         this.resized = resized;
         this.maxWidth = maxWidth;
         this.maxHeight = maxHeight;
+        this.width = width;
+        this.height = height;
         this.quality = quality;
         this.rotation = rotation;
         this.saveToCameraRoll = saveToCameraRoll;
@@ -42,7 +48,7 @@ public class ImageConfig
     {
         return new ImageConfig(
                 this.original, this.resized, maxWidth,
-                this.maxHeight, this.quality, this.rotation,
+                this.maxHeight, this.width, this.height, this.quality, this.rotation,
                 this.saveToCameraRoll
         );
     }
@@ -51,7 +57,7 @@ public class ImageConfig
     {
         return new ImageConfig(
                 this.original, this.resized, this.maxWidth,
-                maxHeight, this.quality, this.rotation,
+                maxHeight, this.width, this.height, this.quality, this.rotation,
                 this.saveToCameraRoll
         );
 
@@ -61,7 +67,7 @@ public class ImageConfig
     {
         return new ImageConfig(
                 this.original, this.resized, this.maxWidth,
-                this.maxHeight, quality, this.rotation,
+                this.maxHeight, this.width, this.height, quality, this.rotation,
                 this.saveToCameraRoll
         );
     }
@@ -70,7 +76,7 @@ public class ImageConfig
     {
         return new ImageConfig(
                 this.original, this.resized, this.maxWidth,
-                this.maxHeight, this.quality, rotation,
+                this.maxHeight, this.width, this.height, this.quality, rotation,
                 this.saveToCameraRoll
         );
     }
@@ -79,7 +85,7 @@ public class ImageConfig
     {
         return new ImageConfig(
                 original, this.resized, this.maxWidth,
-                this.maxHeight, this.quality, this.rotation,
+                this.maxHeight, this.width, this.height, this.quality, this.rotation,
                 this.saveToCameraRoll
         );
     }
@@ -88,7 +94,7 @@ public class ImageConfig
     {
         return new ImageConfig(
                 this.original, resized, this.maxWidth,
-                this.maxHeight, this.quality, this.rotation,
+                this.maxHeight, this.width, this.height, this.quality, this.rotation,
                 this.saveToCameraRoll
         );
     }
@@ -97,7 +103,7 @@ public class ImageConfig
     {
         return new ImageConfig(
                 this.original, this.resized, this.maxWidth,
-                this.maxHeight, this.quality, this.rotation,
+                this.maxHeight, this.width, this.height, this.quality, this.rotation,
                 saveToCameraRoll
         );
     }
@@ -113,6 +119,16 @@ public class ImageConfig
         if (options.hasKey("maxHeight"))
         {
             maxHeight = options.getInt("maxHeight");
+        }
+        int width = 0;
+        if (options.hasKey("width"))
+        {
+            width = options.getInt("width");
+        }
+        int height = 0;
+        if (options.hasKey("height"))
+        {
+            height = options.getInt("height");
         }
         int quality = 100;
         if (options.hasKey("quality"))

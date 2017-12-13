@@ -360,6 +360,17 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
             }
             image = [self downscaleImageIfNecessary:image maxWidth:maxWidth maxHeight:maxHeight];
 
+            // Crop if necessary
+            float width = image.size.width;
+            float height = image.size.height;
+            if ([self.options valueForKey:@"width"]) {
+                width = [[self.options valueForKey:@"width"] floatValue];
+            }
+            if ([self.options valueForKey:@"height"]) {
+                height = [[self.options valueForKey:@"height"] floatValue];
+            }
+            image = [self squareImageWithImage:image width:width height:height];
+
             NSData *data;
             if ([[self.options objectForKey:@"imageFileType"] isEqualToString:@"png"]) {
                 data = UIImagePNGRepresentation(image);
@@ -594,6 +605,55 @@ RCT_EXPORT_METHOD(showImagePicker:(NSDictionary *)options callback:(RCTResponseS
     }
     UIGraphicsEndImageContext();
 
+    return newImage;
+}
+
+- (UIImage *)squareImageWithImage:(UIImage *)image width:(float)width height:(float)height
+{
+    UIImage* newImage = image;
+
+    // Nothing to do here
+    if (image.size.width <= width && image.size.height <= height) {
+        return newImage;
+    }
+
+    double ratio;
+    double delta;
+    CGPoint offset;
+    
+    // Make a new square size, that is the resized imaged width
+    CGSize sz = CGSizeMake(width, height);
+    
+    // Figure out if the picture is landscape or portrait, then
+    // Calculate scale factor and offset
+    if (image.size.width > image.size.height) {
+        ratio = width / image.size.width;
+        delta = (ratio*image.size.width - ratio*image.size.height);
+        offset = CGPointMake(delta/2, 0);
+    } else {
+        ratio = width / image.size.height;
+        delta = (ratio*image.size.height - ratio*image.size.width);
+        offset = CGPointMake(0, delta/2);
+    }
+    
+    // Make the final clipping rect based on the calculated values
+    CGRect clipRect = CGRectMake(-offset.x, -offset.y,
+                                 (ratio * image.size.width) + delta,
+                                 (ratio * image.size.height) + delta);
+    
+    
+    // Start a new context, with scale factor 0.0 so retina displays get
+    // High quality image
+    if ([[UIScreen mainScreen] respondsToSelector:@selector(scale)]) {
+        UIGraphicsBeginImageContextWithOptions(sz, YES, 0.0);
+    } else {
+        UIGraphicsBeginImageContext(sz);
+    }
+    UIRectClip(clipRect);
+    [image drawInRect:clipRect];
+    newImage = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
     return newImage;
 }
 

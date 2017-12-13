@@ -69,6 +69,47 @@ public class MediaUtils
     }
 
     /**
+     * Crop image to a rectangular size and then scale it down to 200x200px
+     *
+     * @param srcBitmap Bitmap
+     * @return Bitmap
+     */
+    private static Bitmap cropImage(Bitmap srcBitmap, int widthHeight) {
+        Bitmap croppedBitmap;
+
+        if (srcBitmap.getWidth() >= srcBitmap.getHeight()) {
+            // landscape
+            // first scale
+            croppedBitmap = Bitmap.createScaledBitmap(srcBitmap, (srcBitmap.getWidth() / (srcBitmap.getHeight() / widthHeight)), widthHeight, false);
+
+            // then crop
+            croppedBitmap = Bitmap.createBitmap(
+                    croppedBitmap,
+                    croppedBitmap.getWidth()/2 - croppedBitmap.getHeight()/2,
+                    0,
+                    croppedBitmap.getHeight(),
+                    croppedBitmap.getHeight()
+            );
+
+        } else {
+            // portrait
+            // first scale
+            croppedBitmap = Bitmap.createScaledBitmap(srcBitmap, widthHeight, (srcBitmap.getHeight() / (srcBitmap.getWidth() / widthHeight)), false);
+
+            // then crop
+            croppedBitmap = Bitmap.createBitmap(
+                    croppedBitmap,
+                    0,
+                    croppedBitmap.getHeight()/2 - croppedBitmap.getWidth()/2,
+                    croppedBitmap.getWidth(),
+                    croppedBitmap.getWidth()
+            );
+        }
+
+        return croppedBitmap;
+    }
+
+    /**
      * Create a resized image to fulfill the maxWidth/maxHeight, quality and rotation values
      *
      * @param context
@@ -154,6 +195,11 @@ public class MediaUtils
         }
 
         scaledPhoto = Bitmap.createBitmap(photo, 0, 0, photo.getWidth(), photo.getHeight(), matrix, true);
+
+        if (imageConfig.width != 0 && imageConfig.height != 0) {
+            scaledPhoto = cropImage(scaledPhoto, imageConfig.width)
+        }
+
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 
         Bitmap.CompressFormat outputFormat = (options.hasKey("imageFileType") && options.getString("imageFileType").toLowerCase().equals("png")) ? Bitmap.CompressFormat.PNG : Bitmap.CompressFormat.JPEG;
