@@ -158,7 +158,9 @@ public class ImageConfig
     {
         return ((initialWidth < maxWidth && maxWidth > 0) || maxWidth == 0) &&
                 ((initialHeight < maxHeight && maxHeight > 0) || maxHeight == 0) &&
-                quality == 100 && (rotation == 0 || currentRotation == rotation);
+                quality == 100 && (rotation == 0 || currentRotation == rotation) &&
+                ((initialWidth == width && width > 0) || width == 0) && 
+                ((initialHeight == height && height > 0) || height == 0);
     }
 
     public File getActualFile()
