@@ -8,8 +8,8 @@ import android.media.ExifInterface;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Environment;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import android.util.Log;
 
 import com.facebook.react.bridge.ReadableMap;
@@ -20,7 +20,6 @@ import com.imagepicker.media.ImageConfig;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
@@ -41,14 +40,39 @@ public class MediaUtils
                                                @NonNull final ReadableMap options,
                                                @NonNull final boolean forceLocal)
     {
+        final String extension = (options.hasKey("imageFileType") && options.getString("imageFileType").toLowerCase().equals("png")) ? ".png" : ".jpg";
+
         final String filename = new StringBuilder("image-")
                 .append(UUID.randomUUID().toString())
-                .append(".jpg")
+                .append(extension)
                 .toString();
 
-        final File path = ReadableMapUtils.hasAndNotNullReadableMap(options, "storageOptions") && !forceLocal
-                ? Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
-                : reactContext.getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        // defaults to Public Pictures Directory
+        File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+
+        if (ReadableMapUtils.hasAndNotNullReadableMap(options, "storageOptions")) 
+        {
+            final ReadableMap storageOptions = options.getMap("storageOptions");
+
+            if (storageOptions.hasKey("privateDirectory"))
+            {
+                boolean saveToPrivateDirectory = storageOptions.getBoolean("privateDirectory");
+                if (saveToPrivateDirectory)
+                {
+                    // if privateDirectory is set then save to app's private files directory
+                    path = reactContext.getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+                }
+            }
+
+            if (ReadableMapUtils.hasAndNotEmptyString(storageOptions, "path"))
+            {
+                path = new File(path, storageOptions.getString("path"));
+            }
+        }
+        else if (forceLocal)
+        {
+            path = reactContext.getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        }
 
         File result = new File(path, filename);
 
@@ -67,6 +91,47 @@ public class MediaUtils
     }
 
     /**
+     * Crop image to a rectangular size and then scale it down to 200x200px
+     *
+     * @param srcBitmap Bitmap
+     * @return Bitmap
+     */
+    private static Bitmap cropImage(Bitmap srcBitmap, int widthHeight) {
+        Bitmap croppedBitmap;
+
+        if (srcBitmap.getWidth() >= srcBitmap.getHeight()) {
+            // landscape
+            // first scale
+            croppedBitmap = Bitmap.createScaledBitmap(srcBitmap, (srcBitmap.getWidth() / (srcBitmap.getHeight() / widthHeight)), widthHeight, false);
+
+            // then crop
+            croppedBitmap = Bitmap.createBitmap(
+                    croppedBitmap,
+                    croppedBitmap.getWidth()/2 - croppedBitmap.getHeight()/2,
+                    0,
+                    croppedBitmap.getHeight(),
+                    croppedBitmap.getHeight()
+            );
+
+        } else {
+            // portrait
+            // first scale
+            croppedBitmap = Bitmap.createScaledBitmap(srcBitmap, widthHeight, (srcBitmap.getHeight() / (srcBitmap.getWidth() / widthHeight)), false);
+
+            // then crop
+            croppedBitmap = Bitmap.createBitmap(
+                    croppedBitmap,
+                    0,
+                    croppedBitmap.getHeight()/2 - croppedBitmap.getWidth()/2,
+                    croppedBitmap.getWidth(),
+                    croppedBitmap.getWidth()
+            );
+        }
+
+        return croppedBitmap;
+    }
+
+    /**
      * Create a resized image to fulfill the maxWidth/maxHeight, quality and rotation values
      *
      * @param context
@@ -79,13 +144,23 @@ public class MediaUtils
     public static @NonNull ImageConfig getResizedImage(@NonNull final Context context,
                                                        @NonNull final ReadableMap options,
                                                        @NonNull final ImageConfig imageConfig,
-                                                       final int initialWidth,
-                                                       final int initialHeight,
+                                                       int initialWidth,
+                                                       int initialHeight,
                                                        final int requestCode)
     {
         BitmapFactory.Options imageOptions = new BitmapFactory.Options();
         imageOptions.inScaled = false;
-        // FIXME: OOM here
+        imageOptions.inSampleSize = 1;
+
+        if (imageConfig.maxWidth != 0 || imageConfig.maxHeight != 0) {
+            while ((imageConfig.maxWidth == 0 || initialWidth > 2 * imageConfig.maxWidth) &&
+                   (imageConfig.maxHeight == 0 || initialHeight > 2 * imageConfig.maxHeight)) {
+                imageOptions.inSampleSize *= 2;
+                initialHeight /= 2;
+                initialWidth /= 2;
+            }
+        }
+
         Bitmap photo = BitmapFactory.decodeFile(imageConfig.original.getAbsolutePath(), imageOptions);
 
         if (photo == null)
@@ -142,8 +217,15 @@ public class MediaUtils
         }
 
         scaledPhoto = Bitmap.createBitmap(photo, 0, 0, photo.getWidth(), photo.getHeight(), matrix, true);
+
+        if (imageConfig.width != 0 && imageConfig.height != 0) {
+            scaledPhoto = cropImage(scaledPhoto, imageConfig.width);
+        }
+
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-        scaledPhoto.compress(Bitmap.CompressFormat.JPEG, result.quality, bytes);
+
+        Bitmap.CompressFormat outputFormat = (options.hasKey("imageFileType") && options.getString("imageFileType").toLowerCase().equals("png")) ? Bitmap.CompressFormat.PNG : Bitmap.CompressFormat.JPEG;
+        scaledPhoto.compress(outputFormat, result.quality, bytes);
 
         final boolean forceLocal = requestCode == REQUEST_LAUNCH_IMAGE_CAPTURE;
         final File resized = createNewFile(context, options, !forceLocal);
@@ -165,11 +247,9 @@ public class MediaUtils
 
         result = result.withResizedFile(resized);
 
-        FileOutputStream fos;
-        try
+        try (FileOutputStream fos = new FileOutputStream(result.resized))
         {
-            fos = new FileOutputStream(result.resized);
-            fos.write(bytes.toByteArray());
+            bytes.writeTo(fos);
         }
         catch (IOException e)
         {

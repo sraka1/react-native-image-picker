@@ -1,7 +1,8 @@
 package com.imagepicker.media;
 
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import android.webkit.MimeTypeMap;
 
 import com.facebook.react.bridge.ReadableMap;
 
@@ -17,6 +18,8 @@ public class ImageConfig
     public @Nullable final File resized;
     public final int maxWidth;
     public final int maxHeight;
+    public final int width;
+    public final int height;
     public final int quality;
     public final int rotation;
     public final boolean saveToCameraRoll;
@@ -25,6 +28,8 @@ public class ImageConfig
                        @Nullable final File resized,
                        final int maxWidth,
                        final int maxHeight,
+                       final int width,
+                       final int height,
                        final int quality,
                        final int rotation,
                        final boolean saveToCameraRoll)
@@ -33,6 +38,8 @@ public class ImageConfig
         this.resized = resized;
         this.maxWidth = maxWidth;
         this.maxHeight = maxHeight;
+        this.width = width;
+        this.height = height;
         this.quality = quality;
         this.rotation = rotation;
         this.saveToCameraRoll = saveToCameraRoll;
@@ -42,7 +49,7 @@ public class ImageConfig
     {
         return new ImageConfig(
                 this.original, this.resized, maxWidth,
-                this.maxHeight, this.quality, this.rotation,
+                this.maxHeight, this.width, this.height, this.quality, this.rotation,
                 this.saveToCameraRoll
         );
     }
@@ -51,7 +58,7 @@ public class ImageConfig
     {
         return new ImageConfig(
                 this.original, this.resized, this.maxWidth,
-                maxHeight, this.quality, this.rotation,
+                maxHeight, this.width, this.height, this.quality, this.rotation,
                 this.saveToCameraRoll
         );
 
@@ -61,7 +68,7 @@ public class ImageConfig
     {
         return new ImageConfig(
                 this.original, this.resized, this.maxWidth,
-                this.maxHeight, quality, this.rotation,
+                this.maxHeight, this.width, this.height, quality, this.rotation,
                 this.saveToCameraRoll
         );
     }
@@ -70,16 +77,25 @@ public class ImageConfig
     {
         return new ImageConfig(
                 this.original, this.resized, this.maxWidth,
-                this.maxHeight, this.quality, rotation,
+                this.maxHeight, this.width, this.height, this.quality, rotation,
                 this.saveToCameraRoll
         );
     }
 
     public @NonNull ImageConfig withOriginalFile(@Nullable final File original)
     {
+        if (original != null) {
+            //if it is a GIF file, always set quality to 100 to prevent compression
+            String extension = MimeTypeMap.getFileExtensionFromUrl(original.getAbsolutePath());
+            int quality = this.quality;
+            if(extension.contains("gif")){
+                quality = 100;
+            }
+        }
+
         return new ImageConfig(
                 original, this.resized, this.maxWidth,
-                this.maxHeight, this.quality, this.rotation,
+                this.maxHeight, this.width, this.height, quality, this.rotation,
                 this.saveToCameraRoll
         );
     }
@@ -88,7 +104,7 @@ public class ImageConfig
     {
         return new ImageConfig(
                 this.original, resized, this.maxWidth,
-                this.maxHeight, this.quality, this.rotation,
+                this.maxHeight, this.width, this.height, this.quality, this.rotation,
                 this.saveToCameraRoll
         );
     }
@@ -97,7 +113,7 @@ public class ImageConfig
     {
         return new ImageConfig(
                 this.original, this.resized, this.maxWidth,
-                this.maxHeight, this.quality, this.rotation,
+                this.maxHeight, this.width, this.height, this.quality, this.rotation,
                 saveToCameraRoll
         );
     }
@@ -107,12 +123,22 @@ public class ImageConfig
         int maxWidth = 0;
         if (options.hasKey("maxWidth"))
         {
-            maxWidth = options.getInt("maxWidth");
+            maxWidth = (int) options.getDouble("maxWidth");
         }
         int maxHeight = 0;
         if (options.hasKey("maxHeight"))
         {
-            maxHeight = options.getInt("maxHeight");
+            maxHeight = (int) options.getDouble("maxHeight");
+        }
+        int width = 0;
+        if (options.hasKey("width"))
+        {
+            width = options.getInt("width");
+        }
+        int height = 0;
+        if (options.hasKey("height"))
+        {
+            height = options.getInt("height");
         }
         int quality = 100;
         if (options.hasKey("quality"))
@@ -122,7 +148,7 @@ public class ImageConfig
         int rotation = 0;
         if (options.hasKey("rotation"))
         {
-            rotation = options.getInt("rotation");
+            rotation = (int) options.getDouble("rotation");
         }
         boolean saveToCameraRoll = false;
         if (options.hasKey("storageOptions"))
@@ -133,7 +159,7 @@ public class ImageConfig
                 saveToCameraRoll = storageOptions.getBoolean("cameraRoll");
             }
         }
-        return new ImageConfig(this.original, this.resized, maxWidth, maxHeight, quality, rotation, saveToCameraRoll);
+        return new ImageConfig(this.original, this.resized, maxWidth, maxHeight, width, height, quality, rotation, saveToCameraRoll);
     }
 
     public boolean useOriginal(int initialWidth,
@@ -142,7 +168,9 @@ public class ImageConfig
     {
         return ((initialWidth < maxWidth && maxWidth > 0) || maxWidth == 0) &&
                 ((initialHeight < maxHeight && maxHeight > 0) || maxHeight == 0) &&
-                quality == 100 && (rotation == 0 || currentRotation == rotation);
+                quality == 100 && (rotation == 0 || currentRotation == rotation) &&
+                ((initialWidth == width && width > 0) || width == 0) && 
+                ((initialHeight == height && height > 0) || height == 0);
     }
 
     public File getActualFile()
